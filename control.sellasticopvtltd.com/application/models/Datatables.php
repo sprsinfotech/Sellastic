@@ -25,7 +25,7 @@ private function make_query($tbl){
         $column_order = $this->db->list_fields($tbl); //this sql query will fetch only feild/column names from given table - user = id, name, f,b,v
 	 	$column_search = $this->db->list_fields($tbl); //this sql query will fetch only feild/column names from given table
 		$this->db->from($tbl);
-        $this->db->where('date','2021-10-25');
+     //   $this->db->where('date','2021-10-25');
         $i = 0;
         foreach ($column_search as $item) // loop column 
         {
@@ -46,7 +46,7 @@ private function make_query($tbl){
             $i++;
         }
          
-        if(isset($_POST['order'])) // here order processing
+       if(isset($_POST['order'])) // here order processing
         {
             $this->db->order_by($column_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
             
@@ -58,6 +58,50 @@ private function make_query($tbl){
         }
     }
 
+    function addPrefixToArray(array $array, string $prefix)
+	{
+		return array_map(function ($arrayValues) use ($prefix) {
+			return $prefix . '.' . $arrayValues;
+		}, $array);
+	}
+
+
+    private function make_multi_query($tbl, $tbl1){
+
+        $column_order = array_merge($this->addPrefixToArray($this->db->list_fields($tbl), $tbl),$this->addPrefixToArray($this->db->list_fields($tbl1), $tbl1));
+	 	$column_search = array_merge($this->addPrefixToArray($this->db->list_fields($tbl), $tbl),$this->addPrefixToArray($this->db->list_fields($tbl1), $tbl1));
+		$this->db->from($tbl);
+        $i = 0;
+        foreach ($column_search as $item) // loop column 
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+                if($i===0) // first loop
+                {
+                    $this->db->group_start();
+                    $this->db->like($item, $_POST['search']['value']);
+                }
+                else
+                {
+                    $this->db->or_like($item, $_POST['search']['value']);
+                }
+                if(count($column_search) - 1 == $i) //last loop
+                    $this->db->group_end(); //close bracket
+            }
+            $i++;
+        }
+         
+       if(isset($_POST['order'])) // here order processing
+        {
+         //   $this->db->order_by($column_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+            
+        } 
+        else if(isset($this->order))
+        {
+            $order = $this->order;
+            $this->db->order_by(key($order), $order[key($order)]);
+        }       
+    }
 public function make_datatables($tbl){  
            $this->make_query($tbl);  
            if($_POST["length"] != -1)  
@@ -68,6 +112,7 @@ public function make_datatables($tbl){
            return $query->result();  
       }
 
+
 public function find_datatables($tbl, $search_data){  
            $this->db->where('customer_id','12');  
            $query=$this->db->get($tbl);  
@@ -77,7 +122,15 @@ public function get_filtered_data($tbl){
         $this->make_query($tbl);
         $query = $this->db->get();
         return $query->num_rows();
-      }       
+      }
+
+public function get_multi_filtered_data($tbl,$tbl1){  
+        $this->make_query($tbl);
+        $query = $this->db->get();
+        return $query->num_rows();
+}
+
+
 public function get_all_data($tbl){
            $this->db->from($tbl);
            return $this->db->count_all_results();  
@@ -118,5 +171,16 @@ public function fetch_details($limit, $start, $tbl){
   $query = $this->db->get();
      return $query;
  }
+
+function getmultidata($tbl,$tbl1,$match){
+    $this->make_multi_query($tbl,$tbl1);
+    $this->db->join($tbl1, $tbl1.'.'.$match .'='. $tbl.'.'.$match,'left');
+    if($_POST["length"] != -1)
+    {
+         $this->db->limit($_POST['length'], $_POST['start']);  
+    }
+    $query = $this->db->get();
+    return $query->result();  
+}
 
 }

@@ -10,8 +10,43 @@ class Datatable extends CI_Controller {
 	//	$this->load->model('homemodel'); 
 		$this->load->database();
 	}
+	
+	function fetch_multi_tbl_data(){
+		$tbl = $this->input->post('tbl');
+		$tbl1 = $this->input->post('tbl1');
+	
+		$fetch_multi_data = $this->crdm->getmultidata('master_pay_tbl','fund_acc_tbl','userid');
+		
+		$data = array();
+		$fields = $this->db->list_fields($tbl);
+		$fields1 = $this->db->list_fields($tbl1);
+		$fields = array_merge($fields,$fields1);
+		$no = $_POST['start'];
+		foreach ($fetch_multi_data as $person) {
+			$no++;
+            $row = array();
+			// loop through fields //
+			foreach ($fields as $field){
+			 $row[$field] = $person->$field; 
+			}
+		 
+		 $row['action_sel'] = '';
+		 $row['action_view'] = '<button type="button" class="btn btn-success btn-sm view" onclick="view_person('."'".$person->id."'".')" data-toggle="modal" data-target=".bd-example-modal-lg" >View</button>';
+		 $row['action_edit'] = '<button type="button" data-tbl="'.$tbl.'" name="edit" id="'.$person->id.'" class="btn btn-primary btn-sm edit" onclick="view_person('."'".$person->id."'".')">Edit</button>';
+		 $row['action_delete'] = '<button type="button" class="btn btn-danger btn-sm" onclick="delete_person('."'".$person->id."'".')">Delete</button>';
+		 $data[] = $row;
+	 }
 
-     function fetch_products_list_data(){  
+	 $output = array(
+					 "draw" => $_POST['draw'],
+					 "recordsTotal" => $this->crdm->get_all_data($tbl),
+					 "recordsFiltered" => $this->crdm->get_multi_filtered_data($tbl,$tbl1),
+					 "data" => $data,
+			 );
+	 echo json_encode($output);
+   }
+
+     function fetch_products_list_data(){
 		   $tbl = $this->input->post('tbl'); 
            $fetch_data = $this->crdm->make_datatables($tbl);
            $data = array();

@@ -162,6 +162,7 @@ public function neft(){
 }
 
 public function master(){
+	$this->load->model(array('datatables'=>'crdm'));
 	if($this->session->has_userdata('ses_data')){
 		$data['user_data']=$this->session->ses_data;
 		$this->load->view('template/header');
